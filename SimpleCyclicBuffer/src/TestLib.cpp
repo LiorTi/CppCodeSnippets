@@ -28,6 +28,15 @@ bool testSimpleBuffer()
 }
 
 int main() {
-	cout << "!!!Hello World!!!" << endl; // prints !!!Hello World!!!
+
+	cout << "running tests (reminder - replace with CppUTest)\n\n";
+
+
+	if (testSimpleBuffer() == true)
+		cout << "testSimpleBuffer PASSED";
+	else
+		cout << "testSimpleBuffer FAILED";
+
+
 	return 0;
 }

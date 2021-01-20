@@ -37,7 +37,7 @@ class SimpleCyclicBuffer
 		const bool peek(T& item);
 
 		/// Returns the number of items in the list
-		int len() { return ((bufferSize) + (_head - _tail)) % _head; }
+		int len() { return ((bufferSize) + (_head - _tail)) % bufferSize; }
 
 		/// Returns the total size of the buffer (in number of items)
 		constexpr int size() { return bufferSize; }
