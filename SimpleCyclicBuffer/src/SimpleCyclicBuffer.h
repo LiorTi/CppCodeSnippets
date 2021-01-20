@@ -3,6 +3,10 @@
  *
  *  Created on: Jan 19, 2021
  *      Author: Lior Timor
+ *
+ *  Feel free to distribute this code and use it where ever you wish.
+ *  I take no responsibility for the code, its effects or any outcome from using it.
+ *
  */
 
 #ifndef SIMPLECYCLICBUFFER_H_
@@ -13,8 +17,13 @@
 template <class T, int bufferSize>
 class SimpleCyclicBuffer
 {
+	private:
+		std::array<T, bufferSize> _cycBuffer;
+		int _head = 0;
+		int _tail = 0;
+
 	public:
-		SimpleCyclicBuffer();
+		SimpleCyclicBuffer() = default;
 
 		/// Pushes an item into the cyclic buffer using the move semantics.
 		bool push(T&& item);
@@ -26,14 +35,13 @@ class SimpleCyclicBuffer
 		const bool peek(T&& item);
 		/// Peeks into the next item on the list (invokes a copy)
 		const bool peek(T& item);
+
 		/// Returns the number of items in the list
-		int len();
-		/// Returns the size of the buffer (in number of items)
-		int size();
+		int len() { return ((bufferSize) + (_head - _tail)) % _head; }
 
+		/// Returns the total size of the buffer (in number of items)
+		constexpr int size() { return bufferSize; }
 
-	private:
-		std::array<T, size> _cycBuffer;
 };
 
 
