@@ -1,0 +1,1 @@
+cppcheck .  --language=c++ 
