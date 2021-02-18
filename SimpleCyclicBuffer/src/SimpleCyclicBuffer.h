@@ -15,8 +15,41 @@
 #include <array>
 #include <exception>
 
+template <class T>
+class CyclicBufferInterface
+{
+	public:
+
+		virtual ~CyclicBufferInterface() {};
+
+		/// Clears the buffer
+		virtual void clear() = 0;
+
+		/// Pushes an item into the cyclic buffer using the move semantics.
+		virtual bool push(T&& item) = 0;
+
+		/// Pushes an item into the cyclic buffer (invoking copy).
+		virtual bool push(const T& item) = 0;
+
+
+		/// Pops an item from the buffer using the move semantics
+		virtual T& pop() = 0;
+
+		/// Peeks into the next item on the list
+		virtual const T& peek() = 0;
+
+
+		/// Returns the number of items in the list
+		virtual int len() = 0;
+
+		/// Returns the total size of the buffer (in number of items)
+		virtual int size() = 0;
+
+};
+
+
 template <class T, int bufferSize>
-class SimpleCyclicBuffer
+class SimpleCyclicBuffer : public CyclicBufferInterface<T>
 {
 	private:
 		std::array<T, bufferSize> _cycBuffer;
@@ -91,8 +124,6 @@ class SimpleCyclicBuffer
 		constexpr int size() { return bufferSize; }
 
 };
-
-
 
 
 #endif /* SIMPLECYCLICBUFFER_H_ */

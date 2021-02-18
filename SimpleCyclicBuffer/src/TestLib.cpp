@@ -10,90 +10,88 @@
 using namespace std;
 
 #include <list>
+#include <vector>
 #include "SimpleCyclicBuffer.h"
+#include "ProtectedSimpleCyclicBuffer.h"
 
 //TODO: Swap with a CppUTest
 #define _assert(eval_statement) 	if ((eval_statement) == false) return false
 
-
-bool testSimpleBuffer()
+bool testSimpleBuffer(CyclicBufferInterface<int> *buffer, int bufferSize)
 {
-	constexpr int BUFFER_SIZE = 100;
-	SimpleCyclicBuffer<int, BUFFER_SIZE> intCyclicBuffer;
-
 	int a = 20;
 
-	_assert(intCyclicBuffer.size() == 100);
-	_assert(intCyclicBuffer.len() == 0);
+	_assert(buffer->size() == 100);
+	_assert(buffer->len() == 0);
 
 	//---- Test partial insert (add by reference) ----
 	for (int i=0; i < 20; i++)
 	{
 		a = i;
-		intCyclicBuffer.push(a);
+		buffer->push(a);
 	}
-	_assert(intCyclicBuffer.len() == 20);
+	_assert(buffer->len() == 20);
 	for (int i=0; i < 20; i++)
 	{
-		a = intCyclicBuffer.pop();
+		a = buffer->pop();
 		_assert(a == i);
 	}
-	_assert(intCyclicBuffer.len() == 0);
+	_assert(buffer->len() == 0);
 
 	//---- Test partial insert (add by move) ----
 	for (int i=0; i < 20; i++)
 	{
 		a = i;
-		intCyclicBuffer.push(std::move(a));
+		buffer->push(std::move(a));
 	}
-	_assert(intCyclicBuffer.len() == 20);
+	_assert(buffer->len() == 20);
 	for (int i=0; i < 20; i++)
 	{
-		a = intCyclicBuffer.pop();
+		a = buffer->pop();
 		_assert(a == i);
 	}
-	_assert(intCyclicBuffer.len() == 0);
+	_assert(buffer->len() == 0);
 
 
 	//---- Test FULL insert (add by move) ----
-	for (int i=0; i < BUFFER_SIZE; i++)
+	for (int i=0; i < bufferSize; i++)
 	{
 		a = i;
-		intCyclicBuffer.push(std::move(a));
+		buffer->push(std::move(a));
 	}
-	_assert(intCyclicBuffer.len() == BUFFER_SIZE);
-	for (int i=0; i < BUFFER_SIZE; i++)
+	_assert(buffer->len() == bufferSize);
+	for (int i=0; i < bufferSize; i++)
 	{
-		a = intCyclicBuffer.pop();
+		a = buffer->pop();
 		_assert(a == i);
 	}
-	_assert(intCyclicBuffer.len() == 0);
+	_assert(buffer->len() == 0);
 
 
 	//---- Test PEEK ----
-	for (int i=0; i < BUFFER_SIZE; i++)
+	for (int i=0; i < bufferSize; i++)
 	{
 		a = i;
-		intCyclicBuffer.push(a);
+		buffer->push(a);
 	}
-	_assert(intCyclicBuffer.len() == BUFFER_SIZE);
-	for (int i=0; i < BUFFER_SIZE; i++)
+	_assert(buffer->len() == bufferSize);
+	for (int i=0; i < bufferSize; i++)
 	{
-		a = intCyclicBuffer.peek();
+		a = buffer->peek();
 		_assert(a == i);
-		a = intCyclicBuffer.pop();
+		a = buffer->pop();
 	}
-	_assert(intCyclicBuffer.len() == 0);
+	_assert(buffer->len() == 0);
 
 
 	//---- Test Clear ----
-	for (int i=0; i < BUFFER_SIZE/2; i++)
+	for (int i=0; i < bufferSize/2; i++)
 	{
 		a = i;
-		intCyclicBuffer.push(a);
+		buffer->push(a);
 	}
-	intCyclicBuffer.clear();
-	_assert(intCyclicBuffer.len() == 0);
+	buffer->clear();
+	_assert(buffer->len() == 0);
 
 
 	//---- Test Mixed push/pop ----
@@ -101,18 +99,18 @@ bool testSimpleBuffer()
 	int count = 0;
 	for (int iteration = 0; iteration < 5; iteration++)
 	{
-		for (int i=0; i < (BUFFER_SIZE / 3); i++)
+		for (int i=0; i < (bufferSize / 3); i++)
 		{
 			a = i * (iteration+i);
-			intCyclicBuffer.push(a);
+			buffer->push(a);
 			backlog.push_front(a);
 
 			count++;
 		}
-		for (int i=0; i < (BUFFER_SIZE / 3); i++)
+		for (int i=0; i < (bufferSize / 3); i++)
 		{
-			a = intCyclicBuffer.peek();
-			int b = intCyclicBuffer.pop();
+			a = buffer->peek();
+			int b = buffer->pop();
 			int e = backlog.back();
 
 			_assert(a == b);
@@ -121,7 +119,7 @@ bool testSimpleBuffer()
 			count--;
 		}
 	}
-	_assert(count == intCyclicBuffer.len());
+	_assert(count == buffer->len());
 
 	//Test Underflow
 	bool underflowCaught = false;
@@ -129,11 +127,11 @@ bool testSimpleBuffer()
 	{
 		for (int i=0; i <5; i++)
 		{
-			intCyclicBuffer.push(1);
+			buffer->push(1);
 		}
 		for (int i=0; i < 6; i++)
 		{
-			intCyclicBuffer.pop();
+			buffer->pop();
 		}
 	} catch (const std::underflow_error&)
 	{
@@ -147,9 +145,9 @@ bool testSimpleBuffer()
 	bool overflowCaught = false;
 	try
 	{
-		for (int i=0; i <intCyclicBuffer.size() + 1; i++)
+		for (int i=0; i <buffer->size() + 1; i++)
 		{
-			intCyclicBuffer.push(1);
+			buffer->push(1);
 		}
 	} catch (const std::overflow_error&)
 	{
@@ -161,12 +159,29 @@ bool testSimpleBuffer()
 	return true;
 }
 
+
 int main() {
 
 	cout << "running tests (reminder - replace with CppUTest/GTest)\n\n";
 
+	constexpr int BUFFER_SIZE = 100;
 
-	if (testSimpleBuffer() == true)
+	std::vector< CyclicBufferInterface<int>* > bufferList = {
+			new SimpleCyclicBuffer<int, BUFFER_SIZE>,
+			new ProtectedSimpleCyclicBuffer<int, BUFFER_SIZE>};
+
+
+	bool success = true;
+
+	for (CyclicBufferInterface<int>* b : bufferList)
+	{
+		if (testSimpleBuffer(b, BUFFER_SIZE) != true)
+		{
+			success = false;
+		}
+	}
+
+	if (true == success)
 		cout << "testSimpleBuffer PASSED";
 	else
 		cout << "testSimpleBuffer FAILED";
