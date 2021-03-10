@@ -1,1 +1,1 @@
-cppcheck .  --language=c++ 
+cppcheck src\SimpleCyclicBuffer  --language=c++ 
