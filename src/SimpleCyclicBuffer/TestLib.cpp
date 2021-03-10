@@ -6,16 +6,25 @@
 // Description : Test SimpleCyclicBuffer - TODO: Need to swap with CppUTest/Gtest
 //============================================================================
 
-#include <iostream>
+
 using namespace std;
 
+#include <iostream>
 #include <list>
 #include <vector>
 #include "SimpleCyclicBuffer.h"
 #include "ProtectedSimpleCyclicBuffer.h"
 
+#include <gtest/gtest.h>
+
 //TODO: Swap with a CppUTest
 #define _assert(eval_statement) 	if ((eval_statement) == false) return false
+
+
+TEST(GENERAL, compile_test)
+{
+	ASSERT_TRUE(true);
+}
 
 bool testSimpleBuffer(CyclicBufferInterface<int> *buffer, int bufferSize)
 {
@@ -160,7 +169,7 @@ bool testSimpleBuffer(CyclicBufferInterface<int> *buffer, int bufferSize)
 }
 
 
-int main() {
+int ___main() {
 
 	cout << "running tests (reminder - replace with CppUTest/GTest)\n\n";
 
