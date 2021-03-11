@@ -12,19 +12,11 @@ using namespace std;
 #include <iostream>
 #include <list>
 #include <vector>
+#include <gtest/gtest.h>
+
 #include "SimpleCyclicBuffer.h"
 #include "ProtectedSimpleCyclicBuffer.h"
 
-#include <gtest/gtest.h>
-
-//TODO: Swap with a CppUTest
-#define _assert(eval_statement) 	if ((eval_statement) == false) return false
-
-
-TEST(GENERAL, compile_test)
-{
-	ASSERT_TRUE(true);
-}
 
 class TestFixtureCyclicBuffer : public ::testing::Test
 {
