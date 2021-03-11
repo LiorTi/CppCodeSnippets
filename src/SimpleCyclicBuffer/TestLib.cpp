@@ -26,175 +26,247 @@ TEST(GENERAL, compile_test)
 	ASSERT_TRUE(true);
 }
 
-bool testSimpleBuffer(CyclicBufferInterface<int> *buffer, int bufferSize)
+class TestFixtureCyclicBuffer : public ::testing::Test
 {
-	int a = 20;
+	public:
+		static constexpr int BUFFER_SIZE = 100;
+		std::vector< CyclicBufferInterface<int>* > bufferList;
 
-	_assert(buffer->size() == 100);
-	_assert(buffer->len() == 0);
-
-	//---- Test partial insert (add by reference) ----
-	for (int i=0; i < 20; i++)
-	{
-		a = i;
-		buffer->push(a);
-	}
-	_assert(buffer->len() == 20);
-	for (int i=0; i < 20; i++)
-	{
-		a = buffer->pop();
-		_assert(a == i);
-	}
-	_assert(buffer->len() == 0);
-
-	//---- Test partial insert (add by move) ----
-	for (int i=0; i < 20; i++)
-	{
-		a = i;
-		buffer->push(std::move(a));
-	}
-	_assert(buffer->len() == 20);
-	for (int i=0; i < 20; i++)
-	{
-		a = buffer->pop();
-		_assert(a == i);
-	}
-	_assert(buffer->len() == 0);
-
-
-	//---- Test FULL insert (add by move) ----
-	for (int i=0; i < bufferSize; i++)
-	{
-		a = i;
-		buffer->push(std::move(a));
-	}
-	_assert(buffer->len() == bufferSize);
-	for (int i=0; i < bufferSize; i++)
-	{
-		a = buffer->pop();
-		_assert(a == i);
-	}
-	_assert(buffer->len() == 0);
-
-
-	//---- Test PEEK ----
-	for (int i=0; i < bufferSize; i++)
-	{
-		a = i;
-		buffer->push(a);
-	}
-	_assert(buffer->len() == bufferSize);
-	for (int i=0; i < bufferSize; i++)
-	{
-		a = buffer->peek();
-		_assert(a == i);
-		a = buffer->pop();
-	}
-	_assert(buffer->len() == 0);
-
-
-	//---- Test Clear ----
-	for (int i=0; i < bufferSize/2; i++)
-	{
-		a = i;
-		buffer->push(a);
-	}
-	buffer->clear();
-	_assert(buffer->len() == 0);
-
-
-	//---- Test Mixed push/pop ----
-	std::list<int> backlog;
-	int count = 0;
-	for (int iteration = 0; iteration < 5; iteration++)
-	{
-		for (int i=0; i < (bufferSize / 3); i++)
+		TestFixtureCyclicBuffer()
 		{
-			a = i * (iteration+i);
-			buffer->push(a);
-			backlog.push_front(a);
-
-			count++;
+			bufferList = {
+						new SimpleCyclicBuffer<int, BUFFER_SIZE>,
+						new ProtectedSimpleCyclicBuffer<int, BUFFER_SIZE>
+			};
 		}
-		for (int i=0; i < (bufferSize / 3); i++)
+
+		virtual ~TestFixtureCyclicBuffer()
 		{
-			a = buffer->peek();
-			int b = buffer->pop();
-			int e = backlog.back();
+			for (auto item = bufferList.begin(); item != bufferList.end(); ++item)
+			{
+				delete(*item);
+			}
 
-			_assert(a == b);
-			_assert(a == e);
-			backlog.pop_back();		//Extract from the list
-			count--;
+			bufferList.clear();
+
 		}
+};
+
+TEST_F(TestFixtureCyclicBuffer, testLengthFunctions)
+{
+
+	for (auto item = bufferList.begin(); item != bufferList.end(); ++item)
+	{
+		ASSERT_TRUE(*item != NULL);
+
+		ASSERT_TRUE((*item)->size() == 100);
+		ASSERT_TRUE((*item)->len() == 0);
 	}
-	_assert(count == buffer->len());
+}
 
-	//Test Underflow
-	bool underflowCaught = false;
-	try
+TEST_F(TestFixtureCyclicBuffer, testPartialInsertByReference)
+{
+	int a = 0;
+
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
 	{
-		for (int i=0; i <5; i++)
+		auto cycBuff = *iter;
+
+		//---- Test partial insert (add by reference) ----
+		for (int i=0; i < 20; i++)
 		{
-			buffer->push(1);
+			a = i;
+			cycBuff->push(a);
 		}
-		for (int i=0; i < 6; i++)
+		ASSERT_TRUE(cycBuff->len() == 20);
+
+		for (int i=0; i < 20; i++)
 		{
-			buffer->pop();
+			a = cycBuff->pop();
+			ASSERT_TRUE(a == i);
 		}
-	} catch (const std::underflow_error&)
-	{
-		underflowCaught = true;
+		ASSERT_TRUE(cycBuff->len() == 0);
 	}
-	_assert(true == underflowCaught);
-
-
-
-	//Test Overflow
-	bool overflowCaught = false;
-	try
-	{
-		for (int i=0; i <buffer->size() + 1; i++)
-		{
-			buffer->push(1);
-		}
-	} catch (const std::overflow_error&)
-	{
-		overflowCaught = true;
-	}
-	_assert(true == overflowCaught);
-
-
-	return true;
 }
 
 
-int ___main() {
+TEST_F(TestFixtureCyclicBuffer, testPartialInsertByMove)
+{
+	int a = 0;
 
-	cout << "running tests (reminder - replace with CppUTest/GTest)\n\n";
-
-	constexpr int BUFFER_SIZE = 100;
-
-	std::vector< CyclicBufferInterface<int>* > bufferList = {
-			new SimpleCyclicBuffer<int, BUFFER_SIZE>,
-			new ProtectedSimpleCyclicBuffer<int, BUFFER_SIZE>};
-
-
-	bool success = true;
-
-	for (CyclicBufferInterface<int>* b : bufferList)
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
 	{
-		if (testSimpleBuffer(b, BUFFER_SIZE) != true)
+		auto cycBuff = *iter;
+
+		//---- Test partial insert (add by move) ----
+		for (int i=0; i < 20; i++)
 		{
-			success = false;
+			a = i;
+			cycBuff->push(std::move(a));
 		}
+		ASSERT_TRUE(cycBuff->len() == 20);
+		for (int i=0; i < 20; i++)
+		{
+			a = cycBuff->pop();
+			ASSERT_TRUE(a == i);
+		}
+		ASSERT_TRUE(cycBuff->len() == 0);
+
 	}
-
-	if (true == success)
-		cout << "testSimpleBuffer PASSED";
-	else
-		cout << "testSimpleBuffer FAILED";
-
-
-	return 0;
 }
+
+TEST_F(TestFixtureCyclicBuffer, testFullInsertByMove)
+{
+	int a = 0;
+
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//---- Test FULL insert (add by move) ----
+		for (int i=0; i < BUFFER_SIZE; i++)
+		{
+			a = i;
+			cycBuff->push(std::move(a));
+		}
+		ASSERT_TRUE(cycBuff->len() == BUFFER_SIZE);
+		for (int i=0; i < BUFFER_SIZE; i++)
+		{
+			a = cycBuff->pop();
+			ASSERT_TRUE(a == i);
+		}
+		ASSERT_TRUE(cycBuff->len() == 0);
+	}
+}
+
+
+TEST_F(TestFixtureCyclicBuffer, testPeek)
+{
+	int a = 0;
+
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//---- Test PEEK ----
+		for (int i=0; i < BUFFER_SIZE; i++)
+		{
+			a = i;
+			cycBuff->push(a);
+		}
+		ASSERT_TRUE(cycBuff->len() == BUFFER_SIZE);
+		for (int i=0; i < BUFFER_SIZE; i++)
+		{
+			a = cycBuff->peek();
+			ASSERT_TRUE(a == i);
+			a = cycBuff->pop();
+		}
+		ASSERT_TRUE(cycBuff->len() == 0);
+	}
+}
+
+TEST_F(TestFixtureCyclicBuffer, testClear)
+{
+	int a = 0;
+
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//---- Test Clear ----
+		for (int i=0; i < BUFFER_SIZE/2; i++)
+		{
+			a = i;
+			cycBuff->push(a);
+		}
+		cycBuff->clear();
+		ASSERT_TRUE(cycBuff);
+	}
+}
+
+TEST_F(TestFixtureCyclicBuffer, testMixedPushPop)
+{
+	int a = 0;
+
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//---- Test Mixed push/pop ----
+		std::list<int> backlog;
+		int count = 0;
+		for (int iteration = 0; iteration < 5; iteration++)
+		{
+			for (int i=0; i < (BUFFER_SIZE / 3); i++)
+			{
+				a = i * (iteration+i);
+				cycBuff->push(a);
+				backlog.push_front(a);
+
+				count++;
+			}
+			for (int i=0; i < (BUFFER_SIZE / 3); i++)
+			{
+				a = cycBuff->peek();
+				int b = cycBuff->pop();
+				int e = backlog.back();
+
+				ASSERT_TRUE(a == b);
+				ASSERT_TRUE(a == e);
+				backlog.pop_back();		//Extract from the list
+				count--;
+			}
+		}
+		ASSERT_TRUE(count == cycBuff->len());
+	}
+}
+
+TEST_F(TestFixtureCyclicBuffer, testUnderflow)
+{
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//Test Underflow
+		bool underflowCaught = false;
+		try
+		{
+			for (int i=0; i <5; i++)
+			{
+				cycBuff->push(1);
+			}
+			for (int i=0; i < 6; i++)
+			{
+				cycBuff->pop();
+			}
+		} catch (const std::underflow_error&)
+		{
+			underflowCaught = true;
+		}
+
+		ASSERT_TRUE(true == underflowCaught);
+	}
+}
+
+TEST_F(TestFixtureCyclicBuffer, testOverflow)
+{
+	for (auto iter = bufferList.begin(); iter != bufferList.end(); ++iter)
+	{
+		auto cycBuff = *iter;
+
+		//Test Overflow
+		bool overflowCaught = false;
+		try
+		{
+			for (int i=0; i <cycBuff->size() + 1; i++)
+			{
+				cycBuff->push(1);
+			}
+		} catch (const std::overflow_error&)
+		{
+			overflowCaught = true;
+		}
+		ASSERT_TRUE(true == overflowCaught);
+	}
+}
+
